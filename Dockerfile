@@ -1,4 +1,4 @@
-FROM golang:alpine AS builder
+FROM registry.suse.com/bci/golang:latest AS builder
 
 LABEL TsungWing Wong <TsungWing_Wong@outlook.com>
 
@@ -7,7 +7,7 @@ WORKDIR /app
 # https://tailscale.com/kb/1118/custom-derp-servers/
 RUN go install tailscale.com/cmd/derper@main
 
-FROM alpine:latest
+FROM registry.suse.com/bci/bci-busybox:latest
 WORKDIR /app
 
 RUN mkdir /app/certs
