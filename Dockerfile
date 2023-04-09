@@ -1,4 +1,4 @@
-FROM golang:alpine AS builder
+FROM registry.suse.com/bci/golang:latest AS builder
 
 LABEL TsungWing Wong <TsungWing_Wong@outlook.com>
 
