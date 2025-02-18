@@ -1,11 +1,11 @@
 FROM registry.suse.com/bci/golang:1.23 AS builder
 
-LABEL TsungWing Wong <TsungWing_Wong@outlook.com>
+LABEL maintainer="TsungWing Wong <TsungWing_Wong@outlook.com>"
 
 WORKDIR /app
 
 # https://tailscale.com/kb/1118/custom-derp-servers/
-RUN go install tailscale.com/cmd/derper@main
+RUN go install tailscale.com/cmd/derper@latest
 
 FROM registry.suse.com/bci/bci-busybox:latest
 WORKDIR /app
