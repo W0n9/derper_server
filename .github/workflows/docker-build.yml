@@ -1,13 +1,8 @@
-name: Build and Push Derper Docker Image
+name: Build Derper Docker Image
 
 on:
-  push:
+  pull_request:
     branches: [ master ]
-    # Publish semver tags as releases.
-    tags: [ 'v*.*.*' ]
-  schedule:
-    # Nightly builds
-    - cron: '0 0 * * *'
 
 env:
   # Use docker.io for Docker Hub if empty
