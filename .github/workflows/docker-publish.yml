@@ -72,6 +72,10 @@ jobs:
 
       - name: Docker Setup Buildx
         uses: docker/setup-buildx-action@v3.9.0
+
+      - name:  BUILDX_NO_DEFAULT_ATTESTATIONS
+        run: |
+          export BUILDX_NO_DEFAULT_ATTESTATIONS=1
       
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
@@ -139,6 +143,10 @@ jobs:
       - name: Docker Setup Buildx
         uses: docker/setup-buildx-action@v3.9.0
       
+      - name:  BUILDX_NO_DEFAULT_ATTESTATIONS
+        run: |
+          export BUILDX_NO_DEFAULT_ATTESTATIONS=1
+      
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
@@ -174,7 +182,7 @@ jobs:
 
       - name: Create multi-arch manifest
         run: |
-          docker manifest create --amend w0n9/derper_server:master \
-            w0n9/derper_server:master-amd64 \
-            w0n9/derper_server:master-arm64
+          docker manifest create w0n9/derper_server:master \
+            --amend w0n9/derper_server:master-amd64 \
+            --amend w0n9/derper_server:master-arm64
           docker manifest push w0n9/derper_server:master
