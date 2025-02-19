@@ -174,11 +174,8 @@ jobs:
 
       - name: Create multi-arch manifest
         run: |
-          for tag in $(echo "${{ steps.meta.outputs.tags }}" | tr '\n' ' '); do
-            tag_name=$(echo $tag | cut -d'/' -f3)
-            docker manifest create ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${tag_name} \
-              --amend ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${tag_name}-amd64 \
-              --amend ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${tag_name}-arm64
-            
-            docker manifest push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${tag_name}
-          done
+          docker manifest create ${{ steps.meta.outputs.tags }} \
+            --amend ${{ steps.meta.outputs.tags }}-amd64 \
+            --amend ${{ steps.meta.outputs.tags }}-arm64
+          
+          docker manifest push ${{ steps.meta.outputs.tags }}
