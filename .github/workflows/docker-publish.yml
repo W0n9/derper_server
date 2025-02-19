@@ -174,7 +174,7 @@ jobs:
 
       - name: Create multi-arch manifest
         run: |
-          docker manifest create w0n9/derper_server:master \
-            --amend w0n9/derper_server:master-amd64 \
-            --amend w0n9/derper_server:master-arm64
+          docker manifest create --amend w0n9/derper_server:master \
+            w0n9/derper_server:master-amd64 \
+            w0n9/derper_server:master-arm64
           docker manifest push w0n9/derper_server:master
