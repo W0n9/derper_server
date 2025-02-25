@@ -156,7 +156,10 @@ jobs:
           sbom: false
 
   create-manifest:
-    needs: [build-on-amd64, build-on-arm64]
+    if: github.event_name != 'pull_request'
+    needs:
+      - build-on-amd64
+      - build-on-arm64
     runs-on: ubuntu-latest
     steps:
       - name: Log in to Docker Hub
