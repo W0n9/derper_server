@@ -1,4 +1,4 @@
-FROM registry.suse.com/bci/golang:1.24.2-1.37.1 AS builder
+FROM registry.suse.com/bci/golang:1.24.3-1.37.3 AS builder
 
 LABEL maintainer="TsungWing Wong <TsungWing_Wong@outlook.com>"
 
