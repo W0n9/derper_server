@@ -7,7 +7,7 @@ WORKDIR /app
 # https://tailscale.com/kb/1118/custom-derp-servers/
 RUN go install tailscale.com/cmd/derper@latest
 
-FROM registry.suse.com/bci/bci-busybox:15.6.33.1
+FROM registry.suse.com/bci/bci-busybox:15.6.33.3
 WORKDIR /app
 
 RUN mkdir /app/certs
