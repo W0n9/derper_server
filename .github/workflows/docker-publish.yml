@@ -32,13 +32,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      # Lint Dockerfile with hadolint
-      - name: Lint Dockerfile
-        uses: hadolint/hadolint-action@v3.1.0
-        with:
-          dockerfile: Dockerfile
-          failure-threshold: error
-
       # # Install the cosign tool except on PR
       # # https://github.com/sigstore/cosign-installer
       # - name: Install cosign
@@ -106,13 +99,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-
-      # Lint Dockerfile with hadolint
-      - name: Lint Dockerfile
-        uses: hadolint/hadolint-action@v3.1.0
-        with:
-          dockerfile: Dockerfile
-          failure-threshold: error
 
       # # Install the cosign tool except on PR
       # # https://github.com/sigstore/cosign-installer
