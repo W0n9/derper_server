@@ -1,4 +1,4 @@
-FROM golang:1.25.5-trixie AS builder
+FROM golang:1.25.5-alpine3.23 AS builder
 
 LABEL maintainer="TsungWing Wong <TsungWing_Wong@outlook.com>"
 
