@@ -19,7 +19,55 @@ env:
 
 
 jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.compare.outputs.should_build }}
+      latest_version: ${{ steps.get_upstream.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Get upstream derper version
+        id: get_upstream
+        run: |
+          VERSION=$(curl -s https://api.github.com/repos/tailscale/derper/releases/latest | jq -r '.tag_name // empty')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Get last built version
+        id: get_last
+        run: |
+          # For push/PR, always build (ignore version check)
+          if [[ "${{ github.event_name }}" != "schedule" ]]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "last_version=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # For schedule, check last release version
+          LAST_VERSION=$(gh release view --json tagName --jq '.tagName' 2>/dev/null || echo "")
+          echo "last_version=$LAST_VERSION" >> $GITHUB_OUTPUT
+          echo "last_version=$LAST_VERSION"
+
+      - name: Compare versions (schedule only)
+        id: compare
+        if: github.event_name == 'schedule'
+        run: |
+          CURRENT="${{ steps.get_upstream.outputs.version }}"
+          LAST="${{ steps.get_last.outputs.last_version }}"
+          echo "Current upstream: $CURRENT"
+          echo "Last built: $LAST"
+          if [ "$CURRENT" != "$LAST" ] && [ -n "$CURRENT" ]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "New version detected, will build"
+          else
+            echo "should_build=false" >> $GITHUB_OUTPUT
+            echo "No new version, skipping build"
+          fi
+
   build-on-amd64:
+    needs: check-version
+    if: needs.check-version.outputs.should_build == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -88,6 +136,8 @@ jobs:
           sbom: false
 
   build-on-arm64:
+    needs: check-version
+    if: needs.check-version.outputs.should_build == 'true'
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
@@ -156,8 +206,9 @@ jobs:
           sbom: false
 
   create-manifest:
-    if: github.event_name != 'pull_request'
+    if: needs.check-version.outputs.should_build == 'true'
     needs:
+      - check-version
       - build-on-amd64
       - build-on-arm64
     runs-on: ubuntu-latest
@@ -185,3 +236,10 @@ jobs:
             --amend ${{ steps.meta.outputs.tags }}-amd64 \
             --amend ${{ steps.meta.outputs.tags }}-arm64
           docker manifest push ${{ steps.meta.outputs.tags }}
+
+      - name: Update release version
+        if: github.event_name == 'schedule'
+        run: |
+          VERSION="${{ needs.check-version.outputs.latest_version }}"
+          # Create or update release with new version tag
+          gh release create "$VERSION" --title "Derper $VERSION" --notes "Auto-built from upstream $VERSION"
