@@ -7,7 +7,7 @@ WORKDIR /app
 # https://tailscale.com/kb/1118/custom-derp-servers/
 RUN go install tailscale.com/cmd/derper@latest
 
-FROM alpine:3.24.0
+FROM alpine:3.24.1
 WORKDIR /app
 
 RUN mkdir /app/certs
