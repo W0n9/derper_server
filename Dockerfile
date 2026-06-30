@@ -1,13 +1,18 @@
-FROM golang:1.26.4-alpine3.23 AS builder
+ARG GO_VERSION=1.26.4
+ARG ALPINE_VERSION=3.24.0
+ARG ALPINE_MAJOR_MINOR=3.24
+ARG TAILSCALE_VERSION=v1.98.8
+
+FROM golang:${GO_VERSION}-alpine${ALPINE_MAJOR_MINOR} AS builder
 
 LABEL maintainer="TsungWing Wong <TsungWing_Wong@outlook.com>"
 
 WORKDIR /app
 
 # https://tailscale.com/kb/1118/custom-derp-servers/
-RUN go install tailscale.com/cmd/derper@latest
+RUN go install tailscale.com/cmd/derper@${TAILSCALE_VERSION}
 
-FROM alpine:3.24.0
+FROM alpine:${ALPINE_VERSION}
 WORKDIR /app
 
 RUN mkdir /app/certs
