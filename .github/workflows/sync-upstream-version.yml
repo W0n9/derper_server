@@ -1,0 +1,102 @@
+name: Sync Upstream Versions
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read stored versions
+        id: stored
+        run: |
+          source .upstream-version
+          echo "tailscale=$TAILSCALE_VERSION" >> $GITHUB_OUTPUT
+          echo "go=$GO_VERSION" >> $GITHUB_OUTPUT
+          echo "alpine=$ALPINE_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Get latest Tailscale version
+        id: tailscale
+        run: |
+          VERSION=$(curl -sf https://api.github.com/repos/tailscale/tailscale/releases/latest | jq -r '.tag_name // empty')
+          if [ -z "$VERSION" ]; then
+            echo "Failed to fetch Tailscale version" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Get latest Go version
+        id: golang
+        run: |
+          VERSION=$(curl -sf 'https://go.dev/dl/?mode=json' | jq -r '.[0].version' | sed 's/^go//')
+          if [ -z "$VERSION" ]; then
+            echo "Failed to fetch Go version" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Get latest Alpine version
+        id: alpine
+        run: |
+          VERSION=$(curl -sf https://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/x86_64/latest-releases.yaml \
+            | grep 'version:' | head -1 | awk '{print $2}')
+          if [ -z "$VERSION" ]; then
+            echo "Failed to fetch Alpine version" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if update needed
+        id: check
+        run: |
+          STORED_TS="${{ steps.stored.outputs.tailscale }}"
+          STORED_GO="${{ steps.stored.outputs.go }}"
+          STORED_ALPINE="${{ steps.stored.outputs.alpine }}"
+          NEW_TS="${{ steps.tailscale.outputs.version }}"
+          NEW_GO="${{ steps.golang.outputs.version }}"
+          NEW_ALPINE="${{ steps.alpine.outputs.version }}"
+
+          if [ "$STORED_TS" = "$NEW_TS" ] && [ "$STORED_GO" = "$NEW_GO" ] && [ "$STORED_ALPINE" = "$NEW_ALPINE" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "All versions up to date, skipping"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+            echo "Changes detected: tailscale $STORED_TS->$NEW_TS, go $STORED_GO->$NEW_GO, alpine $STORED_ALPINE->$NEW_ALPINE"
+          fi
+
+      - name: Update .upstream-version
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          printf 'TAILSCALE_VERSION=%s\nGO_VERSION=%s\nALPINE_VERSION=%s\n' \
+            "${{ steps.tailscale.outputs.version }}" \
+            "${{ steps.golang.outputs.version }}" \
+            "${{ steps.alpine.outputs.version }}" \
+            > .upstream-version
+
+      - name: Update Dockerfile ARG defaults
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          NEW_TS="${{ steps.tailscale.outputs.version }}"
+          NEW_GO="${{ steps.golang.outputs.version }}"
+          NEW_ALPINE="${{ steps.alpine.outputs.version }}"
+          NEW_ALPINE_MM=$(echo "$NEW_ALPINE" | cut -d. -f1,2)
+
+          sed -i "s|^ARG GO_VERSION=.*|ARG GO_VERSION=$NEW_GO|" Dockerfile
+          sed -i "s|^ARG ALPINE_VERSION=.*|ARG ALPINE_VERSION=$NEW_ALPINE|" Dockerfile
+          sed -i "s|^ARG ALPINE_MAJOR_MINOR=.*|ARG ALPINE_MAJOR_MINOR=$NEW_ALPINE_MM|" Dockerfile
+          sed -i "s|^ARG TAILSCALE_VERSION=.*|ARG TAILSCALE_VERSION=$NEW_TS|" Dockerfile
+
+      - name: Commit and push
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .upstream-version Dockerfile
+          git commit -m "chore: 更新上游版本 (tailscale=${{ steps.tailscale.outputs.version }}, go=${{ steps.golang.outputs.version }}, alpine=${{ steps.alpine.outputs.version }})"
+          git push
