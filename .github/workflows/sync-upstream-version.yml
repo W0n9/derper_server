@@ -5,6 +5,10 @@ on:
     - cron: '0 2 * * 1'
   workflow_dispatch:
 
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -45,7 +49,7 @@ jobs:
         id: alpine
         run: |
           VERSION=$(curl -sf https://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/x86_64/latest-releases.yaml \
-            | grep 'version:' | head -1 | awk '{print $2}')
+            | python3 -c "import sys,yaml; d=yaml.safe_load(sys.stdin); print(d[0]['version'])")
           if [ -z "$VERSION" ]; then
             echo "Failed to fetch Alpine version" >&2
             exit 1
