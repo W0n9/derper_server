@@ -34,7 +34,7 @@ jobs:
       - name: Get latest Go version
         id: golang
         run: |
-          VERSION=$(curl -sf 'https://go.dev/dl/?mode=json' | jq -r '.[0].version' | sed 's/^go//')
+          VERSION=$(curl -sf 'https://go.dev/dl/?mode=json' | jq -r '.[0].version // empty' | sed 's/^go//')
           if [ -z "$VERSION" ]; then
             echo "Failed to fetch Go version" >&2
             exit 1
