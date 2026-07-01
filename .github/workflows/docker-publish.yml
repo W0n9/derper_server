@@ -152,8 +152,11 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
 
       - name: Create multi-arch manifest
+        if: github.event_name != 'pull_request'
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
         run: |
-          for TAG in ${{ steps.meta.outputs.tags }}; do
+          for TAG in $TAGS; do
             docker manifest create "$TAG" \
               --amend "${TAG}-amd64" \
               --amend "${TAG}-arm64"
