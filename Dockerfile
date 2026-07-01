@@ -5,6 +5,8 @@ ARG TAILSCALE_VERSION=v1.98.8
 
 FROM golang:${GO_VERSION}-alpine${ALPINE_MAJOR_MINOR} AS builder
 
+ARG TAILSCALE_VERSION
+
 LABEL maintainer="TsungWing Wong <TsungWing_Wong@outlook.com>"
 
 WORKDIR /app
