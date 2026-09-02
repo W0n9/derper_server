@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
     steps:
       - uses: actions/checkout@v7
 
@@ -104,3 +105,11 @@ jobs:
           git add .upstream-version Dockerfile
           git commit -m "chore: 更新上游版本 (tailscale=${{ steps.tailscale.outputs.version }}, go=${{ steps.golang.outputs.version }}, alpine=${{ steps.alpine.outputs.version }})"
           git push
+
+      - name: Trigger image build
+        # 用 GITHUB_TOKEN 推送的提交不会触发 docker-publish 的 on: push(递归防护),
+        # 因此在推送后显式 workflow_dispatch 触发构建。workflow_dispatch 属于文档例外,可由 GITHUB_TOKEN 发起。
+        if: steps.check.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run docker-publish.yml --ref master
