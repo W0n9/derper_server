@@ -50,6 +50,9 @@ jobs:
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-
+            type=raw,value=derper-${{ steps.versions.outputs.tailscale }}
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
 
       - name: Docker Setup Buildx
@@ -108,6 +111,9 @@ jobs:
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-
+            type=raw,value=derper-${{ steps.versions.outputs.tailscale }}
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
 
       - name: Docker Setup Buildx
@@ -134,6 +140,15 @@ jobs:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Read versions
+        id: versions
+        run: |
+          source .upstream-version
+          echo "tailscale=$TAILSCALE_VERSION" >> $GITHUB_OUTPUT
+
       - name: Log in to Docker Hub
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v4
@@ -150,6 +165,9 @@ jobs:
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-
+            type=raw,value=derper-${{ steps.versions.outputs.tailscale }}
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
 
       - name: Create multi-arch manifest
