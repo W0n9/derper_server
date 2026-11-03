@@ -97,13 +97,31 @@ jobs:
           sed -i "s|^ARG ALPINE_MAJOR_MINOR=.*|ARG ALPINE_MAJOR_MINOR=$NEW_ALPINE_MM|" Dockerfile
           sed -i "s|^ARG TAILSCALE_VERSION=.*|ARG TAILSCALE_VERSION=$NEW_TS|" Dockerfile
 
+      - name: Collect upstream derper commits
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          OLD_TS="${{ steps.stored.outputs.tailscale }}"
+          NEW_TS="${{ steps.tailscale.outputs.version }}"
+          git clone --quiet --filter=blob:none --no-checkout \
+            https://github.com/tailscale/tailscale /tmp/tailscale
+          git -C /tmp/tailscale log --oneline --no-decorate "$OLD_TS..$NEW_TS" \
+            -- cmd/derper derp/ > /tmp/derp-commits.txt || true
+          echo "上游 derper 相关提交数: $(wc -l < /tmp/derp-commits.txt)"
+          cat /tmp/derp-commits.txt
+
       - name: Commit and push
         if: steps.check.outputs.skip == 'false'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .upstream-version Dockerfile
-          git commit -m "chore: 更新上游版本 (tailscale=${{ steps.tailscale.outputs.version }}, go=${{ steps.golang.outputs.version }}, alpine=${{ steps.alpine.outputs.version }})"
+          {
+            echo "chore: 更新上游版本 (tailscale=${{ steps.tailscale.outputs.version }}, go=${{ steps.golang.outputs.version }}, alpine=${{ steps.alpine.outputs.version }})"
+            echo ""
+            echo "上游 derper 变更 (${{ steps.stored.outputs.tailscale }}..${{ steps.tailscale.outputs.version }}):"
+            cat /tmp/derp-commits.txt
+          } > /tmp/commit-msg.txt
+          git commit -F /tmp/commit-msg.txt
           git push
 
       - name: Trigger image build
